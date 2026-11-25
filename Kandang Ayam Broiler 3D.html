@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="id"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kandang Ayam Broiler 3D</title>
+<style>
+:root{--fg:#26241f;--card:rgba(255,255,255,.92);--line:#d6d1c6;--ac:#2f6b4f;color-scheme:light dark}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--fg:#ece7dc;--card:rgba(32,30,27,.92);--line:#4a463f;--ac:#7fc3a0}}
+:root[data-theme="dark"]{--fg:#ece7dc;--card:rgba(32,30,27,.92);--line:#4a463f;--ac:#7fc3a0}
+html,body{margin:0;height:100%;overflow:hidden;background:#bcd7e8;font-family:Georgia,"Times New Roman",serif;color:var(--fg)}
+#c{position:fixed;inset:0;touch-action:none}
+#c canvas{display:block;width:100%;height:100%}
+.box{position:fixed;background:var(--card);border:1px solid var(--line);border-radius:6px;backdrop-filter:blur(6px)}
+#info{top:calc(env(safe-area-inset-top,0px) + 10px);left:10px;width:min(300px,calc(100vw - 20px));padding:10px 14px;font-size:14px;line-height:1.5;max-height:60vh;overflow:auto}
+#info summary{cursor:pointer;font-weight:bold;font-size:16px}
+#info dl{margin:8px 0 0;display:grid;grid-template-columns:auto 1fr;gap:3px 12px}
+#info dt{opacity:.7}#info dd{margin:0}
+#info p{margin:8px 0 0;font-size:13px;opacity:.85}
+#bar{bottom:calc(env(safe-area-inset-bottom,0px) + 12px);left:50%;transform:translateX(-50%);display:flex;gap:4px;padding:4px}
+#bar button{font:inherit;font-size:15px;padding:9px 14px;border:0;border-radius:4px;background:transparent;color:var(--fg);cursor:pointer}
+#bar button:hover{background:var(--line)}
+#bar button:focus-visible{outline:2px solid var(--ac)}
+#bar button[aria-pressed="true"]{background:var(--ac);color:#fff}
+</style></head><body>
+<div id="c" aria-label="Ilustrasi 3D kandang ayam broiler"></div>
+<details id="info" class="box" open><summary>Kandang broiler Ross</summary>
+<dl><dt>Ukuran</dt><dd>12 × 52 m (624 m²)</dd>
+<dt>Populasi</dt><dd>6.250 ekor</dd>
+<dt>Kepadatan</dt><dd>10 ekor/m²</dd>
+<dt>Panen</dt><dd>28 hari, 1,6 kg/ekor</dd>
+<dt>Tempat ransum</dt><dd>90 buah (5 kg)</dd>
+<dt>Tempat minum</dt><dd>75 buah (2 galon)</dd>
+<dt>Pemanas DOC</dt><dd>13 buah</dd>
+<dt>Tabung gas</dt><dd>25 buah (3 kg)</dd>
+<dt>Lampu neon</dt><dd>20 buah (40 watt)</dd>
+<dt>Sekam</dt><dd>190 karung</dd></dl>
+<p>Jumlah peralatan sesuai tab Soal Broiler. Pemanas menggantung di tengah kandang, tabung gas disimpan di ujung belakang, tumpukan sekam di luar dekat pintu. Seret untuk memutar, scroll atau cubit untuk zoom.</p></details>
+<div id="bar" class="box" role="toolbar">
+<button data-v="out">Luar</button><button data-v="in">Dalam</button><button data-v="top">Atas</button><button id="rf" aria-pressed="true">Atap</button></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const W=12,L=52,SKY=0xbcd7e8;
+const sc=new THREE.Scene();sc.background=new THREE.Color(SKY);sc.fog=new THREE.Fog(SKY,160,420);
+const cam=new THREE.PerspectiveCamera(50,1,.1,700);
+const ren=new THREE.WebGLRenderer({antialias:true});ren.setPixelRatio(Math.min(devicePixelRatio,2));ren.shadowMap.enabled=true;
+document.getElementById('c').appendChild(ren.domElement);
+sc.add(new THREE.HemisphereLight(0xffffff,0x8a7a5a,.95));
+const sun=new THREE.DirectionalLight(0xfff2d8,.7);sun.position.set(40,60,30);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-48,right:48,top:48,bottom:-48,far:200});sc.add(sun);
+const mat=(c,o)=>new THREE.MeshLambertMaterial(Object.assign({color:c},o));
+function box(w,h,d,c,x,y,z,p,cast){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c));m.position.set(x,y,z);m.castShadow=cast!==false;m.receiveShadow=true;(p||sc).add(m);return m}
+const flat=(w,d,c,y,x)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(w,d),mat(c));m.rotation.x=-Math.PI/2;m.position.set(x||0,y,0);m.receiveShadow=true;sc.add(m)};
+flat(800,800,0x6f9a4a,0);flat(8,800,0x8b7d6b,.02,24);
+box(W+4,.1,L+4,0xb9b4aa,0,.05,0);
+const D=new THREE.Object3D();
+
+// litter (sekam)
+const cv=document.createElement('canvas');cv.width=cv.height=256;const g=cv.getContext('2d');g.fillStyle='#d6bd84';g.fillRect(0,0,256,256);
+for(let i=0;i<3000;i++){g.fillStyle=`hsl(${38+Math.random()*10},${45+Math.random()*20}%,${55+Math.random()*25}%)`;g.fillRect(Math.random()*256,Math.random()*256,2+Math.random()*4,1+Math.random()*2)}
+const tex=new THREE.CanvasTexture(cv);tex.wrapS=tex.wrapT=THREE.RepeatWrapping;tex.repeat.set(6,26);
+const fl=new THREE.Mesh(new THREE.PlaneGeometry(W,L),new THREE.MeshLambertMaterial({map:tex}));fl.rotation.x=-Math.PI/2;fl.position.y=.11;fl.receiveShadow=true;sc.add(fl);
+
+// structure
+const hw=W/2;
+for(const s of[-1,1]){
+ box(.2,.5,L,0xcfc8bb,s*hw,.35,0);
+ for(let k=0;k<14;k++)box(.18,2.6,.18,0xbdb7ad,s*hw,1.4,-L/2+k*(L/13));
+ box(.2,.14,L,0xbdb7ad,s*hw,2.7,0);
+ const m=new THREE.Mesh(new THREE.PlaneGeometry(L,2),mat(0x8fb4d6,{transparent:true,opacity:.28,side:THREE.DoubleSide}));
+ m.rotation.y=Math.PI/2;m.position.set(s*hw,1.7,0);sc.add(m);
+ box(W,2.6,.2,0xd9d2c4,0,1.4,s*L/2);
+ const gb=new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape([[-6,2.6],[6,2.6],[6,3.03],[0,5],[-6,3.03]].map(p=>new THREE.Vector2(p[0],p[1])))),mat(0xe2dccf,{side:THREE.DoubleSide}));
+ gb.position.z=s*L/2;sc.add(gb);
+}
+box(2.2,2.2,.05,0x6b4a2f,0,1.2,L/2+.12);
+for(let k=0;k<14;k++)box(W+.2,.1,.1,0x8a8478,0,2.9,-L/2+k*(L/13));
+const roof=new THREE.Group();sc.add(roof);
+const ang=Math.atan(2.2/6.7);
+for(const s of[-1,1]){const p=box(7.05,.08,L+1.6,0x9aa8b2,s*3.35,3.9,0,roof,false);p.rotation.z=-s*ang}
+box(.5,.14,L+1.6,0x7d8890,0,5.02,0,roof,false);
+
+// 20 neon lamps
+const lampM=new THREE.MeshBasicMaterial({color:0xfffbe6});
+for(let k=0;k<10;k++)for(const x of[-2.5,2.5]){const z=-22.5+k*5;const m=new THREE.Mesh(new THREE.BoxGeometry(1.2,.06,.08),lampM);m.position.set(x,2.75,z);sc.add(m)}
+for(const z of[-16,0,16]){const l=new THREE.PointLight(0xfff4d6,.5,26);l.position.set(0,2.8,z);sc.add(l)}
+
+// 90 feeders (5 kg), 75 drinkers (2 gallon)
+const inst=(geo,col,n)=>{const m=new THREE.InstancedMesh(geo,mat(col),n);m.castShadow=false;sc.add(m);return m};
+const fp=inst(new THREE.CylinderGeometry(.2,.22,.06,10),0xc0392b,90),ft=inst(new THREE.CylinderGeometry(.09,.12,.36,8),0xdedede,90);let n=0;
+for(const x of[-3,0,3])for(let k=0;k<30;k++){const z=-23.2+k*1.6;D.rotation.set(0,0,0);D.scale.set(1,1,1);D.position.set(x,.2,z);D.updateMatrix();fp.setMatrixAt(n,D.matrix);D.position.set(x,.4,z);D.updateMatrix();ft.setMatrixAt(n,D.matrix);n++}
+const dp=inst(new THREE.CylinderGeometry(.15,.17,.3,10),0x2b7fd6,75),dc=inst(new THREE.CylinderGeometry(.1,.1,.05,8),0xf2f2f2,75);n=0;
+for(let k=0;k<75;k++){let x,z;if(k<25){x=-1.5;z=-22.8+k*1.9}else if(k<50){x=1.5;z=-22.8+(k-25)*1.9}else{x=(k%2?4.6:-4.6);z=-22.8+(k-50)*1.9}
+ D.position.set(x,.26,z);D.updateMatrix();dp.setMatrixAt(n,D.matrix);D.position.set(x,.43,z);D.updateMatrix();dc.setMatrixAt(n,D.matrix);n++}
+
+// 13 gas brooders hanging, 25 gas tanks stored at back
+const bro=inst(new THREE.ConeGeometry(.75,.45,12,1,true),0x9a6a2f,13),glow=inst(new THREE.CircleGeometry(.6,12).rotateX(Math.PI/2),0xff8a2a,13);bro.material.side=THREE.DoubleSide;glow.material=new THREE.MeshBasicMaterial({color:0xff8a2a});
+for(let k=0;k<13;k++){const x=k%2?1.5:-1.5,z=-24+k*4;D.position.set(x,1.7,z);D.updateMatrix();bro.setMatrixAt(k,D.matrix);D.position.set(x,1.48,z);D.updateMatrix();glow.setMatrixAt(k,D.matrix);box(.02,.9,.02,0x555555,x,2.15,z,sc,false)}
+const tk=inst(new THREE.CylinderGeometry(.15,.15,.45,10),0x5f7f9f,25);
+for(let k=0;k<25;k++){D.position.set(-3.6+(k%13)*.6,.33+Math.floor(k/13)*.5,-25.2);D.updateMatrix();tk.setMatrixAt(k,D.matrix)}
+
+// 190 sekam sacks outside near door
+const sk=inst(new THREE.BoxGeometry(.5,.2,.8),0xc9a96b,190);n=0;
+for(let y=0;y<5&&n<190;y++)for(let c=0;c<10&&n<190;c++)for(let r=0;r<4&&n<190;r++){D.position.set(10+c*.52,.2+y*.21,L/2+4+r*.82);D.updateMatrix();sk.setMatrixAt(n++,D.matrix)}
+
+// trees
+for(const[x,z]of[[-20,-20],[-24,10],[-18,34],[34,-24],[36,14],[-14,-42],[30,42],[-30,-4]]){
+ const t=new THREE.Mesh(new THREE.CylinderGeometry(.3,.4,2.8,7),mat(0x6b4a2f));t.position.set(x,1.4,z);t.castShadow=true;sc.add(t);
+ const c=new THREE.Mesh(new THREE.SphereGeometry(2.6,10,8),mat(0x3f7a3a));c.position.set(x,4.4,z);c.scale.y=1.1;c.castShadow=true;sc.add(c)}
+
+// 6.250 broilers (Ross, white)
+const N=6250,cols=25,rows=250;
+const mk=(g,c)=>{const m=new THREE.InstancedMesh(g,mat(c),N);m.frustumCulled=false;sc.add(m);return m};
+const sp=new THREE.SphereGeometry(1,8,6),lg=new THREE.CylinderGeometry(.016,.016,.16,5);
+const body=mk(sp,0xffffff),head=mk(new THREE.SphereGeometry(1,6,4),0xffffff),tail=mk(new THREE.SphereGeometry(1,5,4),0xffffff),comb=mk(new THREE.BoxGeometry(.016,.035,.05),0xd9262c),beak=mk(new THREE.ConeGeometry(.02,.06,5).rotateX(Math.PI/2),0xe8b030),l1=mk(lg,0xe6b84a),l2=mk(lg,0xe6b84a);
+const C=[],col=new THREE.Color(),Bm=new THREE.Matrix4(),Lm=new THREE.Matrix4();
+function put(m,i,x,y,z,sx,sy,sz,rx){D.position.set(x,y,z);D.rotation.set(rx||0,0,0);D.scale.set(sx,sy,sz);D.updateMatrix();Lm.multiplyMatrices(Bm,D.matrix);m.setMatrixAt(i,Lm)}
+function base(c){D.position.set(c.x,0,c.z);D.rotation.set(0,c.yaw,0);D.scale.setScalar(c.s);D.updateMatrix();Bm.copy(D.matrix)}
+let i=0;
+for(let r=0;r<rows;r++)for(let q=0;q<cols;q++){
+ const c={x:-5.6+(q+.5)*(11.2/cols)+(Math.random()-.5)*.15,z:-24.5+(r+.5)*(49/rows)+(Math.random()-.5)*.1,yaw:Math.random()*6.28,s:.8+Math.random()*.12,ph:Math.random()*6.28,sp:2+Math.random()*3};C.push(c);base(c);
+ col.setHSL(.1,.12,.86+Math.random()*.12);for(const m of[body,head,tail])m.setColorAt(i,col);
+ put(body,i,0,.28,0,.16,.17,.22,-.1);put(tail,i,0,.34,-.22,.06,.07,.09,.5);put(l1,i,-.06,.08,0,1,1,1);put(l2,i,.06,.08,0,1,1,1);i++}
+for(const m of[body,tail,l1,l2])m.instanceMatrix.needsUpdate=true;
+for(const m of[body,head,tail])m.instanceColor.needsUpdate=true;
+let fr=0;
+function peck(t,a,st){for(let k=a;k<N;k+=st){const c=C[k],v=Math.sin(t*c.sp+c.ph),p=v>.75?(v-.75)*4:0;base(c);
+ const y=.4-.13*p,z=.2+.07*p;put(head,k,0,y,z,.05,.05,.06);put(comb,k,0,y+.05,z,1,1,1);put(beak,k,0,y-.01,z+.06,1,1,1)}
+ for(const m of[head,comb,beak])m.instanceMatrix.needsUpdate=true}
+
+// camera
+const V={out:{az:.8,el:.4,d:88,t:[0,2,0]},in:{az:0,el:.1,d:9,t:[0,.7,15]},top:{az:0,el:1.5,d:80,t:[0,0,0]}};
+const G={az:.8,el:.4,d:88,t:new THREE.Vector3(0,2,0)},S={az:.8,el:.4,d:88,t:new THREE.Vector3(0,2,0)};
+const rf=document.getElementById('rf');
+function setRoof(v){roof.visible=v;rf.setAttribute('aria-pressed',v)}
+rf.onclick=()=>setRoof(!roof.visible);
+document.querySelectorAll('[data-v]').forEach(b=>b.onclick=()=>{const v=V[b.dataset.v];G.az=v.az;G.el=v.el;G.d=v.d;G.t.set(...v.t);if(b.dataset.v==='top')setRoof(false);else if(b.dataset.v==='out')setRoof(true)});
+const cvs=ren.domElement,P=new Map();
+cvs.addEventListener('pointerdown',e=>{cvs.setPointerCapture(e.pointerId);P.set(e.pointerId,[e.clientX,e.clientY])});
+cvs.addEventListener('pointerup',e=>P.delete(e.pointerId));cvs.addEventListener('pointercancel',e=>P.delete(e.pointerId));
+cvs.addEventListener('pointermove',e=>{if(!P.has(e.pointerId))return;const o=P.get(e.pointerId);
+ if(P.size===1){G.az-=(e.clientX-o[0])*.007;G.el=Math.min(1.5,Math.max(.03,G.el+(e.clientY-o[1])*.006))}
+ else{const a=[...P.values()];const d0=Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]);P.set(e.pointerId,[e.clientX,e.clientY]);const b=[...P.values()];const d1=Math.hypot(b[0][0]-b[1][0],b[0][1]-b[1][1]);if(d1>0)G.d=Math.min(200,Math.max(3,G.d*d0/d1))}
+ P.set(e.pointerId,[e.clientX,e.clientY])});
+cvs.addEventListener('wheel',e=>{e.preventDefault();G.d=Math.min(200,Math.max(3,G.d*(1+e.deltaY*.001)))},{passive:false});
+function size(){ren.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}
+addEventListener('resize',size);size();
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function loop(ms){requestAnimationFrame(loop);
+ S.az+=(G.az-S.az)*.12;S.el+=(G.el-S.el)*.12;S.d+=(G.d-S.d)*.12;S.t.lerp(G.t,.12);
+ const{az,el,d,t}=S;cam.position.set(t.x+d*Math.sin(az)*Math.cos(el),t.y+d*Math.sin(el),t.z+d*Math.cos(az)*Math.cos(el));cam.lookAt(t);
+ if(!reduce)peck(ms/1000,fr++%4,4);
+ ren.render(sc,cam)}
+peck(0,0,1);requestAnimationFrame(loop);
+</script></body></html>
